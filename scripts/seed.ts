@@ -18,6 +18,7 @@
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
+import "../lib/ws-polyfill";
 import { createClient } from "@supabase/supabase-js";
 import { readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";

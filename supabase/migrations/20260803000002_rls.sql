@@ -1,7 +1,13 @@
 -- Atlas RLS: org tenancy from the JWT, role-gated inserts, and hard
 -- append-only enforcement.
 --
--- Append-only, layer 1: the client-facing roles simply lack the verbs.
+-- Append-only, layer 1: an explicit grant model. The application role
+-- (authenticated) receives SELECT and INSERT — and nothing else. UPDATE,
+-- DELETE, and TRUNCATE are revoked outright, so the verbs do not exist for
+-- the app no matter what SQL a future feature ships.
+grant usage on schema public to authenticated, service_role;
+grant select, insert on all tables in schema public to authenticated;
+grant all on all tables in schema public to service_role; -- seed/admin infrastructure only
 revoke update, delete, truncate on all tables in schema public from authenticated, anon;
 
 -- Append-only, layer 2: RLS is enabled everywhere and there are NO update or

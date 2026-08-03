@@ -1,3 +1,4 @@
+import "@/lib/ws-polyfill";
 import { config } from "dotenv";
 
 // Integration tests run against the live local Supabase stack and read the
