@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  /* the ledger: warm paper, ink, hunter green, oxblood for divergence */
+  --color-paper: #f6f3ec;
+  --color-paper-deep: #efeadf;
+  --color-card: #fdfcf8;
+  --color-ink: #211f1a;
+  --color-ink-soft: #5c574b;
+  --color-ink-faint: #8d8776;
+  --color-rule: #ddd6c5;
+  --color-rule-strong: #b9b09a;
+  --color-pine: #1d4a38;
+  --color-pine-dark: #123125;
+  --color-pine-wash: #e4ece6;
+  --color-oxblood: #7c2d2d;
+  --color-oxblood-wash: #f3e4e1;
+  --color-timewarp: #9a6b00;
+  --color-timewarp-wash: #f5ead0;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-fraunces), "Georgia", serif;
+  --font-body: var(--font-archivo), "Helvetica Neue", sans-serif;
+  --font-data: var(--font-plexmono), "Menlo", monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  /* faint laid-paper grain */
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(139, 121, 82, 0.025) 0px,
+    rgba(139, 121, 82, 0.025) 1px,
+    transparent 1px,
+    transparent 3px
+  );
 }
+
+/* ledger double rule, as on a printed register */
+.rule-double {
+  border-bottom: 1px solid var(--color-rule-strong);
+  box-shadow: 0 3px 0 -2px var(--color-rule-strong);
+}
+
+.font-data {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* small-caps section label, mono tracking */
+.section-label {
+  font-family: var(--font-data);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+}
+
+/* staggered entrance for page sections */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise {
+  animation: rise-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.rise-1 { animation-delay: 0.03s; }
+.rise-2 { animation-delay: 0.09s; }
+.rise-3 { animation-delay: 0.15s; }
+.rise-4 { animation-delay: 0.21s; }
+.rise-5 { animation-delay: 0.27s; }

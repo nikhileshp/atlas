@@ -1,0 +1,22 @@
+{
+ "cik": "0001059556",
+ "name": "MOODYS CORP /DE/",
+ "tickers": [
+  "MCO"
+ ],
+ "exchanges": [
+  "NYSE"
+ ],
+ "formerNames": [
+  {
+   "name": "DUN & BRADSTREET CORP /DE/",
+   "from": "1998-09-29T00:00:00.000Z",
+   "to": "2000-02-04T00:00:00.000Z"
+  },
+  {
+   "name": "NEW DUN & BRADSTREET CORP",
+   "from": "1998-04-16T00:00:00.000Z",
+   "to": "1998-06-26T00:00:00.000Z"
+  }
+ ]
+}
