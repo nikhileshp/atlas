@@ -14,7 +14,7 @@ type Draft = Record<MetricKey, ScoreMetricInput>;
 const emptyDraft = (): Draft =>
   Object.fromEntries(
     METRICS.map((m) => [m.key, { score: 0, reasoning: "", evidence: [] }]),
-  ) as Draft;
+  ) as unknown as Draft;
 
 /**
  * The five metrics are a causal chain, not five sliders on one screen:

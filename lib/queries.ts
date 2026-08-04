@@ -148,6 +148,15 @@ export async function fetchEntityBundle(
   };
 }
 
+/**
+ * Present-state bundle for WRITE screens: forms always act on what is
+ * current now, regardless of the pinned reading instant. (Kept here so
+ * server components stay pure — no clock calls in render.)
+ */
+export function fetchEntityBundleNow(supabase: SupabaseClient, entityId: string) {
+  return fetchEntityBundle(supabase, entityId, new Date());
+}
+
 export function profileName(profiles: Profile[], userId: string): string {
   return profiles.find((p) => p.user_id === userId)?.display_name ?? "unknown";
 }

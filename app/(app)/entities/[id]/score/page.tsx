@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
-import { fetchEntityBundle } from "@/lib/queries";
+import { fetchEntityBundleNow } from "@/lib/queries";
 import { ScoreWizard } from "@/components/score-wizard";
 
 export default async function ScorePage({ params }: PageProps<"/entities/[id]/score">) {
@@ -9,8 +9,7 @@ export default async function ScorePage({ params }: PageProps<"/entities/[id]/sc
 
   // Scoring writes at now; the wizard always reads the present state
   // (the as-of control is for reading history, not rewriting it).
-  const now = new Date();
-  const bundle = await fetchEntityBundle(supabase, id, now);
+  const bundle = await fetchEntityBundleNow(supabase, id);
   if (!bundle) notFound();
 
   const legalName =

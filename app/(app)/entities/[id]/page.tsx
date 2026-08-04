@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
 import { getAsOf } from "@/lib/asof-server";
 import { fetchEntityBundle, profileName } from "@/lib/queries";
-import { versionChain } from "@/lib/asof";
 import { METRICS } from "@/lib/types";
 import type { ArtifactRow, DecisionRow, PositionInputRow } from "@/lib/types";
 import { AliasAddForm } from "@/components/alias-add-form";
@@ -43,7 +42,6 @@ export default async function EntityDetailPage({
     scores,
     scoreHistory,
     scenarios,
-    positions,
     positionHistory,
     decisions,
     profiles,

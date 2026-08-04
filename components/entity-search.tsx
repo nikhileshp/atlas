@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { createEntity, type CreateEntityState } from "@/actions/entities";
 
 interface Match {
@@ -24,9 +24,10 @@ export function EntitySearch({ canCreate }: { canCreate: boolean }) {
   const [state, formAction, pending] = useActionState(createEntity, initial);
   const debounce = useRef<ReturnType<typeof setTimeout>>(null);
 
-  useEffect(() => {
+  const onQueryChange = (value: string) => {
+    setQ(value);
     if (debounce.current) clearTimeout(debounce.current);
-    if (q.trim().length < 2) {
+    if (value.trim().length < 2) {
       setMatches([]);
       return;
     }
@@ -34,7 +35,7 @@ export function EntitySearch({ canCreate }: { canCreate: boolean }) {
       setSearching(true);
       setSearchError(null);
       try {
-        const res = await fetch(`/api/edgar/search?q=${encodeURIComponent(q)}`);
+        const res = await fetch(`/api/edgar/search?q=${encodeURIComponent(value)}`);
         const json = await res.json();
         if (!res.ok) throw new Error(json.error ?? "search failed");
         setMatches(json.matches);
@@ -45,7 +46,7 @@ export function EntitySearch({ canCreate }: { canCreate: boolean }) {
         setSearching(false);
       }
     }, 300);
-  }, [q]);
+  };
 
   return (
     <div className="space-y-8">
@@ -54,7 +55,7 @@ export function EntitySearch({ canCreate }: { canCreate: boolean }) {
           <span className="section-label">Search SEC EDGAR</span>
           <input
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => onQueryChange(e.target.value)}
             placeholder="Company name or ticker — e.g. “costco” or “V”"
             autoFocus
             className="mt-1 w-full border border-rule bg-card px-4 py-3 text-base focus:outline-none focus:border-pine"

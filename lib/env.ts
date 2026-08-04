@@ -1,4 +1,4 @@
-const KEYS = [
+export const ENV_KEYS = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
@@ -12,7 +12,7 @@ const KEYS = [
   "SEED_USER_PASSWORD",
 ] as const;
 
-export type EnvKey = (typeof KEYS)[number];
+export type EnvKey = (typeof ENV_KEYS)[number];
 
 /** Read a required environment variable; throws if unset or empty. */
 export function env(name: EnvKey): string {

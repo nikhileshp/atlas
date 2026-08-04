@@ -1,0 +1,18 @@
+<h2>You have been invited to Atlas</h2>
+
+<p>
+  You have been invited to join Atlas, the research system of record.
+  Follow this link to accept the invite and set your password:
+</p>
+
+<p>
+  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite">
+    Accept the invitation
+  </a>
+</p>
+
+<p style="color:#777">
+  This link uses the server-side confirm flow (token hash), which binds the
+  session via cookies — required for an app whose reads and writes all run
+  on the server.
+</p>

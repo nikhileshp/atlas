@@ -192,8 +192,8 @@ async function main() {
   } as const;
 
   const entities: Record<keyof typeof CIKS, string> = {} as never;
-  const T0 = "2025-02-03T09:00:00Z"; // eighteen months before today (2026-08-03)
 
+  // entity records land 2025-02-03 — eighteen months before today (2026-08-03)
   let entityHour = 9;
   for (const [key, cik] of Object.entries(CIKS) as [keyof typeof CIKS, string][]) {
     const identity = await edgarCompany(cik);
