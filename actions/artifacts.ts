@@ -2,8 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { randomUUID } from "node:crypto";
 import { requireUser } from "@/lib/supabase/server";
+import { buildStorageKey, isOwnedStorageKey } from "@/lib/storage";
+import { canWriteResearch } from "@/lib/roles";
 import { env } from "@/lib/env";
 import { sha256Hex } from "@/lib/hash";
 import { resolveAsOf } from "@/lib/asof";
@@ -15,9 +16,38 @@ export interface ArtifactFormState {
 
 const ARTIFACT_TYPES = ["note", "model", "primer", "thesis", "filing", "transcript", "other"];
 
+export interface PreparedUpload {
+  storageKey: string;
+  signedUrl: string;
+  error: string | null;
+}
+
+/**
+ * Step one of a file ingest. The browser uploads straight to Storage with a
+ * signed URL minted under the caller's JWT (so the org-prefix policy applies),
+ * because Server Actions cap request bodies at 1 MB and Vercel at 4.5 MB —
+ * far below a primer or a model. createArtifact then receives only the key.
+ */
+export async function prepareUpload(fileName: string): Promise<PreparedUpload> {
+  const { supabase, profile } = await requireUser();
+  if (!canWriteResearch(profile.role)) {
+    return { storageKey: "", signedUrl: "", error: "Your role cannot write artifacts." };
+  }
+  const storageKey = buildStorageKey(profile.org_id, fileName || "upload");
+  const { data, error } = await supabase.storage
+    .from(env("SUPABASE_STORAGE_BUCKET"))
+    .createSignedUploadUrl(storageKey);
+  if (error || !data) {
+    return { storageKey: "", signedUrl: "", error: `Could not start upload: ${error?.message}` };
+  }
+  return { storageKey, signedUrl: data.signedUrl, error: null };
+}
+
 /**
  * Single ingest path for all three sources (file / url / paste).
- *  - files land in Supabase Storage; Postgres stores only the object key
+ *  - files are already in Supabase Storage (see prepareUpload); the action
+ *    receives the object key, verifies it belongs to the caller's org, and
+ *    reads the object back to hash it — Postgres stores only the key
  *  - a content hash detects re-uploads: same hash -> new VERSION of the
  *    existing artifact (supersedes), never a silent duplicate
  *  - the entity link is a blocking requirement: an artifact linked to
@@ -60,15 +90,19 @@ export async function createArtifact(
   let body: string | null = null;
   let storageKey: string | null = null;
   let contentHash: string;
-  let uploadBytes: Buffer | null = null;
-  let fileName = "";
 
   if (sourceKind === "file") {
-    const file = formData.get("file");
-    if (!(file instanceof File) || file.size === 0) return { error: "Choose a file." };
-    uploadBytes = Buffer.from(await file.arrayBuffer());
-    contentHash = sha256Hex(uploadBytes);
-    fileName = file.name.replace(/[^\w.\-()+ ]/g, "_");
+    const key = String(formData.get("storage_key") ?? "");
+    if (!isOwnedStorageKey(key, profile.org_id)) return { error: "Choose a file." };
+    const { data: blob, error: readError } = await supabase.storage
+      .from(env("SUPABASE_STORAGE_BUCKET"))
+      .download(key);
+    if (readError || !blob) {
+      return { error: `Upload did not complete: ${readError?.message ?? "object missing"}` };
+    }
+    if (blob.size === 0) return { error: "The uploaded file is empty." };
+    contentHash = sha256Hex(Buffer.from(await blob.arrayBuffer()));
+    storageKey = key;
   } else if (sourceKind === "url") {
     url = String(formData.get("url") ?? "").trim();
     if (!/^https?:\/\/.+/.test(url)) return { error: "Enter a valid http(s) URL." };
@@ -86,16 +120,6 @@ export async function createArtifact(
     .eq("content_hash", contentHash);
   const currentSameHash = resolveAsOf((sameHash ?? []) as ArtifactRow[], new Date());
   const predecessor = currentSameHash[0] ?? null;
-
-  if (uploadBytes) {
-    storageKey = `${profile.org_id}/${randomUUID()}/${fileName}`;
-    const { error: uploadError } = await supabase.storage
-      .from(env("SUPABASE_STORAGE_BUCKET"))
-      .upload(storageKey, uploadBytes, {
-        contentType: (formData.get("file") as File).type || "application/octet-stream",
-      });
-    if (uploadError) return { error: `Upload failed: ${uploadError.message}` };
-  }
 
   const { data: artifact, error } = await supabase
     .from("artifact")

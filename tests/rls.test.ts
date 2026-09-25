@@ -345,4 +345,19 @@ describe("storage tenancy", () => {
       });
     expect(error).not.toBeNull();
   });
+
+  // Browser-direct uploads: the server mints a signed upload URL with the
+  // caller's JWT, so the same path policy must gate URL creation.
+  it("mints a signed upload URL only under the caller's own org prefix", async () => {
+    const own = await alice.storage
+      .from(bucket())
+      .createSignedUploadUrl(`${orgId}/rls-test-signed/hello.txt`);
+    expect(own.error).toBeNull();
+    expect(own.data?.token).toBeTruthy();
+
+    const foreign = await alice.storage
+      .from(bucket())
+      .createSignedUploadUrl(`${otherOrgId}/rls-test-signed/hello.txt`);
+    expect(foreign.error).not.toBeNull();
+  });
 });

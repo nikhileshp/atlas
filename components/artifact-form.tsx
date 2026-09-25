@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { createArtifact, type ArtifactFormState } from "@/actions/artifacts";
+import { startTransition, useActionState, useState, type FormEvent } from "react";
+import { createArtifact, prepareUpload, type ArtifactFormState } from "@/actions/artifacts";
 
 interface EntityOption {
   id: string;
@@ -25,9 +25,50 @@ export function ArtifactForm({
 }) {
   const [state, action, pending] = useActionState(createArtifact, initial);
   const [source, setSource] = useState<(typeof SOURCES)[number]["key"]>("file");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [linked, setLinked] = useState<Set<string>>(
     new Set(preselected ? [preselected] : []),
   );
+
+  /**
+   * Files never pass through the Server Action (1 MB body cap; 4.5 MB on
+   * Vercel). The browser PUTs the file straight to Storage using a signed URL
+   * the server mints under the user's JWT, then submits only the object key.
+   */
+  const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    if (source !== "file") return; // url / paste: ordinary action submit
+    e.preventDefault();
+    setUploadError(null);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    const file = fd.get("file");
+    if (!(file instanceof File) || file.size === 0) {
+      setUploadError("Choose a file.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const prepared = await prepareUpload(file.name);
+      if (prepared.error) throw new Error(prepared.error);
+      const res = await fetch(prepared.signedUrl, {
+        method: "PUT",
+        headers: {
+          "content-type": file.type || "application/octet-stream",
+          "x-upsert": "false",
+        },
+        body: file,
+      });
+      if (!res.ok) throw new Error(`Storage rejected the upload (${res.status}).`);
+      fd.delete("file");
+      fd.set("storage_key", prepared.storageKey);
+      startTransition(() => action(fd));
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const toggle = (id: string) =>
     setLinked((prev) => {
@@ -38,7 +79,7 @@ export function ArtifactForm({
     });
 
   return (
-    <form action={action} className="space-y-6">
+    <form action={action} onSubmit={onSubmit} className="space-y-6">
       {/* source path */}
       <div className="grid sm:grid-cols-3 gap-2">
         {SOURCES.map((s) => (
@@ -186,17 +227,17 @@ export function ArtifactForm({
         </div>
       </fieldset>
 
-      {state.error && (
+      {(uploadError ?? state.error) && (
         <p className="text-sm text-oxblood bg-oxblood-wash border border-oxblood/30 px-3 py-2">
-          {state.error}
+          {uploadError ?? state.error}
         </p>
       )}
       <button
-        disabled={pending || linked.size === 0}
+        disabled={pending || uploading || linked.size === 0}
         className="bg-pine text-paper px-6 py-2.5 text-sm font-data uppercase tracking-wider hover:bg-pine-dark disabled:opacity-50"
         title={linked.size === 0 ? "Link at least one entity first" : undefined}
       >
-        {pending ? "Saving…" : "Save artifact"}
+        {uploading ? "Uploading…" : pending ? "Saving…" : "Save artifact"}
       </button>
       {linked.size === 0 && (
         <span className="ml-3 text-xs text-oxblood font-data">

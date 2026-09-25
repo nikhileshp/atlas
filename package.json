@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run tests/env.test.ts tests/asof.test.ts tests/hash.test.ts tests/edgar-cache.test.ts",
+    "test": "vitest run tests/env.test.ts tests/asof.test.ts tests/hash.test.ts tests/edgar-cache.test.ts tests/storage-key.test.ts",
     "test:integration": "vitest run tests/rls.test.ts tests/seed.test.ts tests/users.test.ts",
     "seed": "tsx scripts/seed.ts",
     "bootstrap": "bash scripts/bootstrap.sh",

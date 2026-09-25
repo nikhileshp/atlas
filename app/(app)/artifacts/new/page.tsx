@@ -37,8 +37,7 @@ export default async function NewArtifactPage({
         <ArtifactForm entities={options} preselected={preselected} />
       ) : (
         <p className="text-sm text-ink-soft border border-rule bg-paper-deep px-4 py-3">
-          Artifacts are written by analysts and PMs. The admin role manages
-          users and entity records instead.
+          Your role cannot write artifacts.
         </p>
       )}
     </div>
