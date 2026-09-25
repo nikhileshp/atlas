@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { env } from "@/lib/env";
+import { removeUser as removeUserById } from "@/lib/users";
 
 export interface InviteFormState {
   error: string | null;
@@ -57,4 +58,47 @@ export async function inviteUser(
 
   revalidatePath("/admin/users");
   return { error: null, ok: true };
+}
+
+export interface RemoveUserState {
+  error: string | null;
+  outcome: "deleted" | "revoked" | null;
+}
+
+/**
+ * Remove a user from the org. Admin only; never yourself. A user with no
+ * authored rows is deleted; an author is banned and stamped removed_at, and
+ * every row they wrote stays (see lib/users.ts).
+ */
+export async function removeUser(
+  _prev: RemoveUserState,
+  formData: FormData,
+): Promise<RemoveUserState> {
+  const { user, profile } = await requireUser();
+  if (profile.role !== "admin") {
+    return { error: "Only admins can remove users.", outcome: null };
+  }
+  const userId = String(formData.get("user_id") ?? "");
+  if (!userId) return { error: "Missing user.", outcome: null };
+  if (userId === user.id) {
+    return { error: "You cannot remove your own account.", outcome: null };
+  }
+
+  const admin = createAdminClient();
+  const { data: target } = await admin
+    .from("profile")
+    .select("org_id")
+    .eq("user_id", userId)
+    .single();
+  if (!target || target.org_id !== profile.org_id) {
+    return { error: "No such user in your org.", outcome: null };
+  }
+
+  try {
+    const outcome = await removeUserById(admin, userId);
+    revalidatePath("/admin/users");
+    return { error: null, outcome };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Removal failed.", outcome: null };
+  }
 }

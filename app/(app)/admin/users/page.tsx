@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
 import { InviteForm } from "@/components/invite-form";
+import { RemoveUserButton } from "@/components/remove-user-button";
 import type { Profile } from "@/lib/types";
 
 export default async function AdminUsersPage() {
-  const { supabase, profile } = await requireUser();
+  const { supabase, user, profile } = await requireUser();
   if (profile.role !== "admin") notFound();
 
   const { data } = await supabase
@@ -18,18 +19,23 @@ export default async function AdminUsersPage() {
       <header>
         <h1 className="font-display text-3xl text-pine-dark">Users</h1>
         <p className="text-sm text-ink-soft mt-1">
-          Membership is invite-only — there is no public signup. Invites go
-          through local Supabase Auth; on this machine the email lands in the
-          mail catcher at{" "}
-          <a
-            href="http://127.0.0.1:54324"
-            target="_blank"
-            rel="noreferrer"
-            className="font-data text-pine underline decoration-dotted"
-          >
-            127.0.0.1:54324
-          </a>
-          .
+          Membership is invite-only — there is no public signup. Removing a
+          user who has written anything revokes their access but keeps every
+          row they wrote; a user who wrote nothing is deleted outright.
+          {process.env.NODE_ENV === "development" && (
+            <>
+              {" "}On this machine invite emails land in the mail catcher at{" "}
+              <a
+                href="http://127.0.0.1:54324"
+                target="_blank"
+                rel="noreferrer"
+                className="font-data text-pine underline decoration-dotted"
+              >
+                127.0.0.1:54324
+              </a>
+              .
+            </>
+          )}
         </p>
       </header>
 
@@ -40,11 +46,15 @@ export default async function AdminUsersPage() {
             <th className="section-label px-4 py-2.5 border-b-2 border-rule-strong">Email</th>
             <th className="section-label px-4 py-2.5 border-b-2 border-rule-strong">Role</th>
             <th className="section-label px-4 py-2.5 border-b-2 border-rule-strong">Joined</th>
+            <th className="section-label px-4 py-2.5 border-b-2 border-rule-strong"></th>
           </tr>
         </thead>
         <tbody>
           {profiles.map((p) => (
-            <tr key={p.user_id} className="border-b border-rule">
+            <tr
+              key={p.user_id}
+              className={`border-b border-rule ${p.removed_at ? "text-ink-soft line-through" : ""}`}
+            >
               <td className="px-4 py-2.5">{p.display_name}</td>
               <td className="px-4 py-2.5 font-data text-xs">{p.email}</td>
               <td className="px-4 py-2.5">
@@ -54,6 +64,17 @@ export default async function AdminUsersPage() {
               </td>
               <td className="px-4 py-2.5 font-data text-xs text-ink-soft">
                 {new Date(p.created_at).toLocaleDateString()}
+              </td>
+              <td className="px-4 py-2.5 text-right">
+                {p.removed_at ? (
+                  <span className="text-xs font-data no-underline">
+                    removed {new Date(p.removed_at).toLocaleDateString()}
+                  </span>
+                ) : p.user_id === user.id ? (
+                  <span className="text-xs font-data text-ink-soft">you</span>
+                ) : (
+                  <RemoveUserButton userId={p.user_id} email={p.email} />
+                )}
               </td>
             </tr>
           ))}

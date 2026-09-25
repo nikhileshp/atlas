@@ -44,7 +44,7 @@ export async function requireUser() {
     .select("*")
     .eq("user_id", user.id)
     .single();
-  if (!profile) redirect("/login");
+  if (!profile || profile.removed_at) redirect("/login");
 
   return { supabase, user, profile: profile as Profile };
 }

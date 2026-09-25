@@ -9,6 +9,7 @@ export interface Profile {
   display_name: string;
   role: Role;
   created_at: string;
+  removed_at: string | null;
 }
 
 /** Uniform bitemporal/append-only base columns on research tables. */

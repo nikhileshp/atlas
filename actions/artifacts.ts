@@ -120,7 +120,7 @@ export async function createArtifact(
     return {
       error:
         error.code === "42501"
-          ? "Your role cannot write artifacts (analyst or pm required)."
+          ? "Your role cannot write artifacts (analyst, pm, or admin required)."
           : error.message,
     };
   }

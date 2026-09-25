@@ -12,5 +12,8 @@ export default defineConfig({
     // out of the default unit run via the `test` vs `test:integration` scripts
     include: ["tests/**/*.test.ts"],
     testTimeout: 30_000,
+    // integration files share one live database; running them in parallel
+    // makes seed-shape assertions race against users.test fixtures
+    fileParallelism: false,
   },
 });
