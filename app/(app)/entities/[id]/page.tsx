@@ -7,6 +7,7 @@ import { METRICS } from "@/lib/types";
 import type { ArtifactRow, DecisionRow, PositionInputRow } from "@/lib/types";
 import { AliasAddForm } from "@/components/alias-add-form";
 import { ScenarioForm } from "@/components/scenario-form";
+import { canWriteResearch as canWriteResearchFor } from "@/lib/roles";
 
 const ALIAS_ORDER = ["legal_name", "ticker", "former_name", "figi", "lei", "internal"] as const;
 const ALIAS_LABEL: Record<string, string> = {
@@ -72,7 +73,7 @@ export default async function EntityDetailPage({
     ...decisions.map((row) => ({ kind: "decision" as const, at: row.valid_at, row })),
   ].sort((a, b) => a.at.localeCompare(b.at));
 
-  const canWriteResearch = profile.role === "analyst" || profile.role === "pm";
+  const canWriteResearch = canWriteResearchFor(profile.role);
 
   return (
     <div className="space-y-10">

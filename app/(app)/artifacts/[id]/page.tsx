@@ -6,6 +6,7 @@ import { versionChain, resolveAsOf } from "@/lib/asof";
 import { env } from "@/lib/env";
 import { tombstoneArtifact } from "@/actions/artifacts";
 import type { AliasRow, ArtifactEntityRow, ArtifactRow } from "@/lib/types";
+import { canWriteResearch } from "@/lib/roles";
 
 export default async function ArtifactDetailPage({
   params,
@@ -71,7 +72,7 @@ export default async function ArtifactDetailPage({
     signedUrl = data?.signedUrl ?? null;
   }
 
-  const canWrite = profile.role === "analyst" || profile.role === "pm";
+  const canWrite = canWriteResearch(profile.role);
 
   return (
     <div className="max-w-3xl rise space-y-6">

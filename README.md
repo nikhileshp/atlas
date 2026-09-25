@@ -9,7 +9,8 @@ The "as of" control in the header re-renders every view as the system saw the
 world at that instant — that is how the firm reconstructs what it knew at the
 moment it made a decision.
 
-Runs entirely on localhost. No deployment configuration exists on purpose.
+Runs on localhost out of the box. To host it (Supabase Cloud + Vercel), follow
+[DEPLOY.md](DEPLOY.md).
 
 ## Prerequisites
 
@@ -37,7 +38,7 @@ Password for all three: `atlas-local-dev` (env `SEED_USER_PASSWORD`).
 |---|---|---|
 | `alice.analyst@atlas.test` | analyst | artifacts, quality scores, scenarios |
 | `pete.pm@atlas.test` | pm | analyst's set + position inputs, decisions |
-| `ada.admin@atlas.test` | admin | entity records, aliases, user invites |
+| `ada.admin@atlas.test` | admin | everything a pm can, plus entity records, aliases, user invites |
 
 A dev-only user switcher sits in the header (gated on
 `NODE_ENV === "development"`), so RLS behavior across the three roles can be
@@ -88,7 +89,8 @@ public constants, identical on every machine.
 Moving off localhost is a config change, not a code change: repoint the four
 Supabase values and `SITE_URL` at hosted infrastructure. The dev user
 switcher and seed credentials are development-only and do not ship
-(`NODE_ENV` gate).
+(`NODE_ENV` gate). The hosted instance has no seed; `npm run create-admin`
+creates the first org and admin. Full walkthrough in [DEPLOY.md](DEPLOY.md).
 
 ## Database changes
 

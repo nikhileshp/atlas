@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/supabase/server";
 import { fetchEntityBundleNow } from "@/lib/queries";
 import { ScoreWizard } from "@/components/score-wizard";
+import { canWriteResearch } from "@/lib/roles";
 
 export default async function ScorePage({ params }: PageProps<"/entities/[id]/score">) {
   const { id } = await params;
@@ -16,7 +17,7 @@ export default async function ScorePage({ params }: PageProps<"/entities/[id]/sc
     bundle.aliases.find((a) => a.alias_type === "legal_name")?.value ?? "(unnamed)";
   const prior = bundle.scores[0] ?? null;
 
-  const canWrite = profile.role === "analyst" || profile.role === "pm";
+  const canWrite = canWriteResearch(profile.role);
   if (!canWrite) {
     return (
       <p className="text-sm text-ink-soft border border-rule bg-paper-deep px-4 py-3 max-w-xl">

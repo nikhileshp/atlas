@@ -1,7 +1,7 @@
 /**
  * The RLS matrix, exercised against the live local stack with real JWTs:
  *  - UPDATE and DELETE are denied to every application role (append-only)
- *  - role gates: analyst/pm/admin can insert exactly what the spec says
+ *  - role gates: analyst/pm insert what the spec says; admin is a superset of pm
  *  - attribution: created_by must be the acting user
  *  - tenancy: a second org sees nothing of the seeded org, via the JWT claim
  *  - storage: writes are confined to the caller's org prefix
@@ -183,7 +183,7 @@ describe("role gates", () => {
     cleanupRows.push(["position_input", data!.id]);
   });
 
-  it("analyst can write artifacts; admin cannot", async () => {
+  it("analyst can write artifacts", async () => {
     const base = {
       org_id: orgId,
       artifact_type: "note",
@@ -200,11 +200,47 @@ describe("role gates", () => {
       .single();
     expect(error).toBeNull();
     cleanupRows.push(["artifact", data!.id]);
+  });
 
-    const { error: adaErr } = await ada
+  it("admin is a superset: can write artifacts", async () => {
+    const { data, error } = await ada
       .from("artifact")
-      .insert({ ...base, created_by: await uid(ada) });
-    expect(adaErr).not.toBeNull();
+      .insert({
+        org_id: orgId,
+        artifact_type: "note",
+        source_kind: "paste",
+        title: "rls test note by admin",
+        author: "test",
+        body: "text",
+        created_by: await uid(ada),
+        valid_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+    expect(error).toBeNull();
+    cleanupRows.push(["artifact", data!.id]);
+  });
+
+  it("admin is a superset: can write position inputs", async () => {
+    const { data, error } = await ada
+      .from("position_input")
+      .insert({
+        org_id: orgId,
+        entity_id: appleId,
+        created_by: await uid(ada),
+        irr: 0.1,
+        skew: 2,
+        conviction: 5,
+        fcf_growth: 0.05,
+        computed_weight: 1,
+        chosen_weight: 1,
+        rationale: "rls test row by admin",
+        valid_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+    expect(error).toBeNull();
+    cleanupRows.push(["position_input", data!.id]);
   });
 
   it("admin can write entity aliases; analyst cannot", async () => {

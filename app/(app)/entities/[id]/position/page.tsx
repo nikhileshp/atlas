@@ -5,6 +5,7 @@ import { getAsOf } from "@/lib/asof-server";
 import { fetchEntityBundle, fetchEntityBundleNow, profileName } from "@/lib/queries";
 import { PositionForm } from "@/components/position-form";
 import { DecisionForm } from "@/components/decision-form";
+import { canWritePositions } from "@/lib/roles";
 
 export default async function PositionPage({
   params,
@@ -25,7 +26,7 @@ export default async function PositionPage({
   const basisPosition = nowBundle?.positions[0] ?? null;
   const basisScore = nowBundle?.scores[0] ?? null;
 
-  const isPm = profile.role === "pm";
+  const isPm = canWritePositions(profile.role);
   const history = [...bundle.positionHistory]
     .filter((p) => !p.is_tombstone)
     .sort((a, b) => b.recorded_at.localeCompare(a.recorded_at));
@@ -50,7 +51,7 @@ export default async function PositionPage({
         <PositionForm entityId={id} />
       ) : (
         <p className="text-sm text-ink-soft border border-rule bg-paper-deep px-4 py-3">
-          Position inputs are written by the PM. Your role ({profile.role}) has
+          Position inputs are written by the PM or an admin. Your role ({profile.role}) has
           read access to the full history below.
         </p>
       )}

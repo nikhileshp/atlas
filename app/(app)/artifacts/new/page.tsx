@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { getAsOf } from "@/lib/asof-server";
 import { fetchEntitiesAsOf, fetchAliasesAsOf, identityFromAliases } from "@/lib/queries";
 import { ArtifactForm } from "@/components/artifact-form";
+import { canWriteResearch } from "@/lib/roles";
 
 export default async function NewArtifactPage({
   searchParams,
@@ -23,7 +24,7 @@ export default async function NewArtifactPage({
     })`,
   }));
 
-  const canWrite = profile.role === "analyst" || profile.role === "pm";
+  const canWrite = canWriteResearch(profile.role);
 
   return (
     <div className="max-w-3xl rise">
