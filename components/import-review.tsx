@@ -17,20 +17,24 @@ export function ImportReview({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkEntity, setBulkEntity] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  // Include ticks respond immediately; the server value replaces the
+  // optimistic one when the refresh lands.
+  const [includeOverride, setIncludeOverride] = useState<Record<string, boolean>>({});
+  const isIncluded = (i: ImportItemRow) => includeOverride[i.id] ?? i.include;
   const label = useMemo(() => new Map(entities.map((e) => [e.id, e.label])), [entities]);
 
   const visible = items.filter((i) =>
     filter === "all" ? true
     : filter === "unmatched" ? i.status === "unmatched"
     : filter === "duplicates" ? i.status === "duplicate"
-    : i.include && i.chosen_entity_ids.length > 0 && i.status !== "imported",
+    : isIncluded(i) && i.chosen_entity_ids.length > 0 && i.status !== "imported",
   );
   const counts = {
     notes: items.filter((i) => i.kind === "note").length,
     docs: items.filter((i) => i.kind === "attachment").length,
     unmatched: items.filter((i) => i.status === "unmatched").length,
     duplicates: items.filter((i) => i.status === "duplicate").length,
-    ready: items.filter((i) => i.include && i.chosen_entity_ids.length > 0 && !["imported", "skipped"].includes(i.status)).length,
+    ready: items.filter((i) => isIncluded(i) && i.chosen_entity_ids.length > 0 && !["imported", "skipped"].includes(i.status)).length,
   };
 
   const act = (fn: () => Promise<{ error: string | null }>) =>
@@ -96,7 +100,16 @@ export function ImportReview({
           {visible.map((i) => (
             <tr key={i.id} className={`border-b border-rule ${i.kind === "attachment" ? "bg-paper-deep/40" : ""}`}>
               <td className="px-2 py-1.5"><input type="checkbox" checked={selected.has(i.id)} onChange={() => toggleSel(i.id)} /></td>
-              <td className="px-2 py-1.5"><input type="checkbox" checked={i.include} disabled={readOnly || i.status === "imported"} onChange={(e) => act(() => updateImportItem(i.id, { include: e.target.checked }))} /></td>
+              <td className="px-2 py-1.5"><input
+                  type="checkbox"
+                  checked={isIncluded(i)}
+                  disabled={readOnly || i.status === "imported"}
+                  onChange={(e) => {
+                    const next = e.target.checked;
+                    setIncludeOverride((prev) => ({ ...prev, [i.id]: next }));
+                    act(() => updateImportItem(i.id, { include: next }));
+                  }}
+                /></td>
               <td className={`px-2 py-1.5 ${i.kind === "attachment" ? "pl-8 text-ink-soft" : ""}`} title={i.body ?? i.file_name ?? ""}>
                 {i.title}
                 {i.kind === "attachment" && i.bytes != null && <span className="ml-2 font-data text-xs">{Math.round(i.bytes / 1024)} KB</span>}
