@@ -8,6 +8,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
+import { commitBatchPage } from "@/lib/import/commit-run";
 
 const url = () => env("NEXT_PUBLIC_SUPABASE_URL");
 const anonKey = () => env("NEXT_PUBLIC_SUPABASE_ANON_KEY");
@@ -93,5 +94,53 @@ describe("import staging policies", () => {
   it("other org sees nothing", async () => {
     const { data } = await rita.from("import_batch").select("id").eq("id", batchId);
     expect(data).toEqual([]);
+  });
+});
+
+describe("commitBatchPage", () => {
+  let appleId: string;
+  let commitBatch: string;
+
+  beforeAll(async () => {
+    const { data: apple } = await admin.from("entity").select("id").eq("cik", "0000320193").single();
+    appleId = apple!.id;
+    const { data: b } = await alice
+      .from("import_batch")
+      .insert({ org_id: orgId, created_by: await uid(alice), source_kind: "enex", storage_key: `${orgId}/test/c.enex`, file_name: "c.enex", status: "review" })
+      .select()
+      .single();
+    commitBatch = b!.id;
+    const rows = [
+      { kind: "note", position: 0, title: "Imported note", body: "text one", content_hash: "import-h-1", artifact_type: "note", chosen_entity_ids: [appleId], include: true },
+      { kind: "note", position: 1, title: "Skipped note", body: "text two", content_hash: "import-h-2", artifact_type: "note", chosen_entity_ids: [], include: true },
+      { kind: "note", position: 2, title: "Unticked", body: "text three", content_hash: "import-h-3", artifact_type: "note", chosen_entity_ids: [appleId], include: false },
+    ];
+    for (const r of rows) {
+      const { error } = await alice.from("import_item").insert({ ...r, batch_id: commitBatch, org_id: orgId, valid_at: "2024-03-12T14:05:00.000Z" });
+      if (error) throw error;
+    }
+  });
+
+  it("writes artifacts + links for included items with companies, skips the rest, and is idempotent", async () => {
+    const ctx = { orgId, userId: await uid(alice), importerName: "Alice Okafor" };
+    const first = await commitBatchPage(alice, ctx, commitBatch, 50);
+    expect(first).toEqual({ processed: 3, remaining: 0 });
+
+    const { data: items } = await alice.from("import_item").select("title,status,artifact_id").eq("batch_id", commitBatch).order("position");
+    expect(items!.map((i) => i.status)).toEqual(["imported", "skipped", "skipped"]);
+    const artifactId = items![0].artifact_id!;
+
+    const { data: art } = await alice.from("artifact").select("title,created_by,valid_at,source_kind").eq("id", artifactId).single();
+    expect(art!.title).toBe("Imported note");
+    expect(art!.created_by).toBe(await uid(alice));
+    expect(art!.valid_at).toBe("2024-03-12T14:05:00+00:00");
+    expect(art!.source_kind).toBe("paste");
+    const { data: links } = await alice.from("artifact_entity").select("entity_id").eq("artifact_id", artifactId);
+    expect(links!.map((l) => l.entity_id)).toEqual([appleId]);
+
+    const again = await commitBatchPage(alice, ctx, commitBatch, 50);
+    expect(again).toEqual({ processed: 0, remaining: 0 });
+    const { data: batch } = await alice.from("import_batch").select("status").eq("id", commitBatch).single();
+    expect(batch!.status).toBe("imported");
   });
 });
