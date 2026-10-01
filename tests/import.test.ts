@@ -7,7 +7,9 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { readFileSync } from "node:fs";
 import { env } from "@/lib/env";
+import { parseBatchStep } from "@/lib/import/parse-run";
 import { commitBatchPage } from "@/lib/import/commit-run";
 
 const url = () => env("NEXT_PUBLIC_SUPABASE_URL");
@@ -142,5 +144,56 @@ describe("commitBatchPage", () => {
     expect(again).toEqual({ processed: 0, remaining: 0 });
     const { data: batch } = await alice.from("import_batch").select("status").eq("id", commitBatch).single();
     expect(batch!.status).toBe("imported");
+  });
+});
+
+describe("parseBatchStep", () => {
+  const bucket = env("SUPABASE_STORAGE_BUCKET");
+  let parseBatch: string;
+
+  beforeAll(async () => {
+    const key = `${orgId}/import-test/${Date.now()}-sample.enex`;
+    const { error: upErr } = await alice.storage.from(bucket).upload(key, readFileSync("fixtures/enex/sample.enex"), { contentType: "application/xml" });
+    if (upErr) throw upErr;
+    const { data: b } = await alice
+      .from("import_batch")
+      .insert({ org_id: orgId, created_by: await uid(alice), source_kind: "enex", storage_key: key, file_name: "sample.enex" })
+      .select()
+      .single();
+    parseBatch = b!.id;
+  });
+
+  it("stages notes and document attachments with suggestions, resuming across small chunks", async () => {
+    let done = false;
+    let calls = 0;
+    while (!done) {
+      const r = await parseBatchStep(alice, parseBatch, { bucket, chunkBytes: 1500, deadlineMs: 0 });
+      done = r.done;
+      calls += 1;
+      if (calls > 20) throw new Error("did not finish");
+    }
+    expect(calls).toBeGreaterThan(1); // deadlineMs 0 => one note per call
+
+    const { data: batch } = await alice.from("import_batch").select("*").eq("id", parseBatch).single();
+    expect(batch!.status).toBe("review");
+    expect(batch!.notes_seen).toBe(3);
+    expect(batch!.images_skipped).toBe(1);
+
+    const { data: items } = await alice.from("import_item").select("*").eq("batch_id", parseBatch).order("position");
+    expect(items!.map((i) => [i.kind, i.title])).toEqual([
+      ["note", "AAPL mgmt call 2024-03"],
+      ["attachment", "apple-model-summary.pdf"],
+      ["note", "General market thoughts"],
+      ["note", "Costco vs Visa: pricing"],
+    ]);
+    const { data: apple } = await admin.from("entity").select("id").eq("cik", "0000320193").single();
+    expect(items![0].suggested_entity_ids).toEqual([apple!.id]);
+    expect(items![0].status).toBe("pending");
+    expect(items![1].parent_item_id).toBe(items![0].id);
+    expect(items![1].artifact_type).toBe("other");
+    expect(items![1].storage_key).toMatch(new RegExp(`^${orgId}/[0-9a-f-]{36}/apple-model-summary.pdf$`));
+    expect(items![2].status).toBe("unmatched");
+    const { data: visa } = await admin.from("entity").select("id").eq("cik", "0001403161").single();
+    expect(items![3].suggested_entity_ids).toContain(visa!.id); // "V" as a whole word in the body
   });
 });
