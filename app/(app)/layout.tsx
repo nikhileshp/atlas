@@ -5,6 +5,7 @@ import { AsOfControl, TimewarpBanner } from "@/components/as-of-control";
 import { UserSwitcher } from "@/components/user-switcher";
 import { signOut } from "@/actions/auth";
 import type { Profile } from "@/lib/types";
+import { canWriteResearch } from "@/lib/roles";
 
 const ROLE_STYLE: Record<string, string> = {
   analyst: "bg-pine-wash text-pine",
@@ -68,6 +69,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <Link href="/" className="hover:text-pine-dark">Entities</Link>
             <Link href="/positions" className="hover:text-pine-dark">Positions</Link>
             <Link href="/artifacts/new" className="hover:text-pine-dark">Ingest</Link>
+            {canWriteResearch(profile.role) && (
+              <Link href="/import" className="hover:text-pine-dark">Import</Link>
+            )}
             {profile.role === "admin" && (
               <>
                 <Link href="/entities/new" className="hover:text-pine-dark">Add company</Link>
