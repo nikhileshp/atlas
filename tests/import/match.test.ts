@@ -27,7 +27,8 @@ describe("suggestEntities", () => {
 
   it("does not match a one-letter ticker inside ordinary words but does as a word", () => {
     expect(suggestEntities(index, "", "a very good quarter")).toEqual([]);
-    expect(suggestEntities(index, "", "V takes price in cross-border")).toEqual(["visa"]);
+    expect(suggestEntities(index, "", "V takes price in cross-border")).toEqual([]); // bare short ticker: explicit forms only
+    expect(suggestEntities(index, "", "Visa (V) takes price in cross-border")).toEqual(["visa"]);
   });
 
   it("matches names case-insensitively, including punctuation in the alias", () => {

@@ -56,12 +56,25 @@ export function splitCompleteNotes(buf: Buffer, isEof: boolean): { blocks: Buffe
   return { blocks, consumed };
 }
 
+const MIME_EXT: Record<string, string> = {
+  "application/pdf": ".pdf",
+  "application/msword": ".doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+  "application/vnd.ms-excel": ".xls",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+  "application/vnd.ms-powerpoint": ".ppt",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+  "text/csv": ".csv",
+};
+
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
   cdataPropName: "__cdata",
   textNodeName: "#text",
   trimValues: true,
+  // titles like "0700", "3.10", "true" are text, not numbers or booleans
+  parseTagValue: false,
   isArray: (name) => name === "resource",
 });
 
@@ -71,8 +84,11 @@ const str = (v: unknown): string => (typeof v === "string" ? v : typeof v === "n
 function textOf(node: unknown): string {
   if (node == null) return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(textOf).join("");
   const n = node as Raw;
   if (typeof n.__cdata === "string") return n.__cdata;
+  // content containing "]]>" is exported as several CDATA sections
+  if (Array.isArray(n.__cdata)) return n.__cdata.map(textOf).join("");
   if (typeof n["#text"] === "string") return n["#text"] as string;
   return "";
 }
@@ -85,8 +101,10 @@ export function parseNoteBlock(xml: string): ParsedNote {
     const data = textOf(r.data).replace(/\s+/g, "");
     const bytes = Buffer.from(data, "base64");
     const attrs = (r["resource-attributes"] ?? {}) as Raw;
-    const fileName = str(attrs["file-name"]) || "attachment";
-    return { fileName, mime: str(r.mime).toLowerCase(), bytes, md5: createHash("md5").update(bytes).digest("hex") };
+    const mime = str(r.mime).toLowerCase();
+    // a nameless resource still needs an extension: type defaults key off it
+    const fileName = str(attrs["file-name"]) || `attachment${MIME_EXT[mime] ?? ""}`;
+    return { fileName, mime, bytes, md5: createHash("md5").update(bytes).digest("hex") };
   });
 
   const documents: ParsedResource[] = [];

@@ -1,6 +1,7 @@
 /**
  * Company suggestions for imported items, from the aliases the org already
- * maintains. Tickers: whole word, case-sensitive. Names (legal, former,
+ * maintains. Tickers: whole word, case-sensitive (<= 2 chars: explicit forms
+ * only, see buildAliasIndex). Names (legal, former,
  * internal): whole phrase, case-insensitive, >= 3 chars. Title beats body.
  * Pure; the caller supplies alias rows already resolved as-of now.
  */
@@ -28,7 +29,16 @@ export function buildAliasIndex(aliases: AliasRow[]): AliasIndex {
   for (const a of aliases) {
     const value = a.value.trim();
     if (a.alias_type === "ticker" && value) {
-      entries.push({ entityId: a.entity_id, kind: "ticker", value, re: new RegExp(`(?<![\\w])${escape(value)}(?![\\w])`) });
+      const v = escape(value);
+      // One- and two-letter tickers (A, T, IT, V) are ordinary words or
+      // fragments ("M&A", "AT&T") far more often than they are companies, and
+      // a match pre-ticks a link into an append-only record. They match only
+      // in explicit forms: $V, (V), NYSE: V / NASDAQ: V.
+      const re =
+        value.length <= 2
+          ? new RegExp(`(?:\\$${v}(?![\\w])|\\(${v}\\)|(?:NYSE|NASDAQ|AMEX)\\s*:\\s*${v}(?![\\w]))`)
+          : new RegExp(`(?<![\\w])${v}(?![\\w])`);
+      entries.push({ entityId: a.entity_id, kind: "ticker", value, re });
     } else if (NAME_TYPES.has(a.alias_type) && value.length >= 3) {
       entries.push({ entityId: a.entity_id, kind: "name", value, re: new RegExp(`(?<![\\w])${escape(value)}(?![\\w])`, "i") });
     }

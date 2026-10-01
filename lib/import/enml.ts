@@ -7,12 +7,20 @@
 
 const NAMED: Record<string, string> = {
   amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ",
+  mdash: "—", ndash: "–", hellip: "…", bull: "•",
+  lsquo: "‘", rsquo: "’", ldquo: "“", rdquo: "”",
+  copy: "©", reg: "®", trade: "™", euro: "€", pound: "£", yen: "¥",
 };
+
+/** An out-of-range code point (e.g. &#99999999;) stays literal instead of throwing. */
+function codePoint(original: string, n: number): string {
+  return Number.isInteger(n) && n >= 0 && n <= 0x10ffff ? String.fromCodePoint(n) : original;
+}
 
 function decodeEntities(s: string): string {
   return s
-    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
-    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(parseInt(d, 10)))
+    .replace(/&#x([0-9a-f]+);/gi, (m, h) => codePoint(m, parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (m, d) => codePoint(m, parseInt(d, 10)))
     .replace(/&([a-z]+);/gi, (m, n: string) => NAMED[n.toLowerCase()] ?? m);
 }
 
@@ -28,6 +36,7 @@ export function enmlToText(enml: string, mediaNames: Map<string, string | null>)
   });
 
   s = s
+    .replace(/<\/(td|th)>/gi, "\t")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<li\b[^>]*>/gi, "• ")
     .replace(/<\/(div|p|li|tr|h[1-6]|blockquote|pre|table)>/gi, "\n")
