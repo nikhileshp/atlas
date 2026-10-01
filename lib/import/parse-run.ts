@@ -33,7 +33,7 @@ export async function parseBatchStep(
   const { data: b, error } = await supabase.from("import_batch").select("*").eq("id", batchId).single();
   if (error || !b) throw new Error(`batch not found: ${error?.message}`);
   let batch = b as ImportBatchRow;
-  if (batch.status !== "parsing") return { done: batch.status !== "parsing", batch };
+  if (batch.status !== "parsing") return { done: true, batch };
 
   const fail = async (msg: string) => {
     const { data } = await supabase.from("import_batch").update({ status: "failed", error: msg, updated_at: new Date().toISOString() }).eq("id", batchId).select().single();
