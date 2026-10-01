@@ -197,3 +197,149 @@ describe("parseBatchStep", () => {
     expect(items![3].suggested_entity_ids).toContain(visa!.id); // "V" as a whole word in the body
   });
 });
+
+// ── regressions from the whole-branch review ───────────────────────────────
+
+describe("review hardening: staging writes", () => {
+  it("creator cannot rewrite storage_key, content_hash or batch_id, and cannot delete", async () => {
+    const forged = await alice.from("import_item").update({ storage_key: `${orgId}/forged/x.pdf` }).eq("id", itemId).select();
+    expect(forged.error).not.toBeNull();
+    const hash = await alice.from("import_item").update({ content_hash: "forged" }).eq("id", itemId).select();
+    expect(hash.error).not.toBeNull();
+    const del = await alice.from("import_item").delete().eq("id", itemId).select();
+    expect(del.error).not.toBeNull();
+    const ok = await alice.from("import_item").update({ include: true }).eq("id", itemId).select();
+    expect(ok.error).toBeNull();
+  });
+});
+
+describe("review hardening: commit", () => {
+  let appleId: string;
+  const ctxFor = async () => ({ orgId, userId: await uid(alice), importerName: "Alice Okafor" });
+  const newBatch = async () => {
+    const { data } = await alice
+      .from("import_batch")
+      .insert({ org_id: orgId, created_by: await uid(alice), source_kind: "enex", storage_key: `${orgId}/test/h.enex`, file_name: "h.enex", status: "review" })
+      .select()
+      .single();
+    return data!.id as string;
+  };
+  const item = (batch: string, position: number, over: Record<string, unknown>) => ({
+    batch_id: batch, org_id: orgId, kind: "note", position, title: `hardening ${position}`, body: "x",
+    artifact_type: "note", valid_at: "2024-03-12T14:05:00.000Z", include: true, ...over,
+  });
+
+  beforeAll(async () => {
+    const { data: apple } = await admin.from("entity").select("id").eq("cik", "0000320193").single();
+    appleId = apple!.id;
+  });
+
+  it("two items with the same hash in one batch do not supersede each other", async () => {
+    const batch = await newBatch();
+    const h = `same-hash-${Date.now()}`;
+    await alice.from("import_item").insert([
+      item(batch, 0, { title: "Empty clip A", content_hash: h, chosen_entity_ids: [appleId] }),
+      item(batch, 1, { title: "Empty clip B", content_hash: h, chosen_entity_ids: [appleId] }),
+    ]);
+    await commitBatchPage(alice, await ctxFor(), batch, 50);
+    const { data: items } = await alice.from("import_item").select("status,artifact_id").eq("batch_id", batch).order("position");
+    expect(items!.map((i) => i.status)).toEqual(["imported", "imported"]);
+    const { data: arts } = await alice.from("artifact").select("id,supersedes").in("id", items!.map((i) => i.artifact_id));
+    expect(arts!.every((a) => a.supersedes === null)).toBe(true);
+  });
+
+  it("a duplicate the reviewer chose to include becomes a new version of the artifact it duplicates", async () => {
+    const h = `dup-hash-${Date.now()}`;
+    const { data: existing } = await alice
+      .from("artifact")
+      .insert({ org_id: orgId, artifact_type: "note", source_kind: "paste", title: "original", author: "t", body: "x", content_hash: h, created_by: await uid(alice), valid_at: new Date().toISOString() })
+      .select("id")
+      .single();
+    const batch = await newBatch();
+    await alice.from("import_item").insert(item(batch, 0, { content_hash: h, chosen_entity_ids: [appleId], status: "duplicate", duplicate_of: existing!.id }));
+    await commitBatchPage(alice, await ctxFor(), batch, 50);
+    const { data: it1 } = await alice.from("import_item").select("artifact_id").eq("batch_id", batch).single();
+    const { data: art } = await alice.from("artifact").select("supersedes").eq("id", it1!.artifact_id).single();
+    expect(art!.supersedes).toBe(existing!.id);
+  });
+
+  it("an unknown company id marks the item as an error and writes no artifact", async () => {
+    const batch = await newBatch();
+    const h = `bad-entity-${Date.now()}`;
+    await alice.from("import_item").insert(item(batch, 0, { content_hash: h, chosen_entity_ids: ["99999999-9999-4999-8999-999999999999"] }));
+    await commitBatchPage(alice, await ctxFor(), batch, 50);
+    const { data: it1 } = await alice.from("import_item").select("status,error,artifact_id").eq("batch_id", batch).single();
+    expect(it1!.status).toBe("error");
+    expect(it1!.error).toMatch(/company/i);
+    expect(it1!.artifact_id).toBeNull();
+    const { data: arts } = await alice.from("artifact").select("id").eq("content_hash", h);
+    expect(arts).toEqual([]);
+  });
+});
+
+describe("review hardening: parse", () => {
+  const bucket = env("SUPABASE_STORAGE_BUCKET");
+  const upload = async (fixture: string) => {
+    const key = `${orgId}/import-test/${Date.now()}-${Math.random().toString(36).slice(2)}-${fixture}`;
+    const { error } = await alice.storage.from(bucket).upload(key, readFileSync(`fixtures/enex/${fixture}`), { contentType: "application/xml" });
+    if (error) throw error;
+    const { data } = await alice
+      .from("import_batch")
+      .insert({ org_id: orgId, created_by: await uid(alice), source_kind: "enex", storage_key: key, file_name: fixture })
+      .select()
+      .single();
+    return data!.id as string;
+  };
+  const parseAll = async (batch: string) => {
+    for (let i = 0; i < 30; i += 1) {
+      const r = await parseBatchStep(alice, batch, { bucket });
+      if (r.done) return r.batch;
+    }
+    throw new Error("did not finish");
+  };
+
+  it("re-running a step over notes already staged adds nothing (reload / crash / second tab)", async () => {
+    const batch = await upload("sample.enex");
+    await parseAll(batch);
+    const before = await alice.from("import_item").select("id", { count: "exact", head: true }).eq("batch_id", batch);
+    // simulate a runner that lost its progress write: rewind and parse again
+    await admin.from("import_batch").update({ bytes_done: 0, status: "parsing" }).eq("id", batch);
+    const again = await parseAll(batch);
+    const after = await alice.from("import_item").select("id", { count: "exact", head: true }).eq("batch_id", batch);
+    expect(after.count).toBe(before.count);
+    expect(after.count).toBe(4);
+    expect(again.notes_seen).toBe(3);
+  });
+
+  it("stages an image-only note as a non-importable error and flags an in-batch duplicate attachment", async () => {
+    const batch = await upload("edge.enex");
+    const done = await parseAll(batch);
+    expect(done.status).toBe("review");
+    const { data: items } = await alice.from("import_item").select("*").eq("batch_id", batch).order("position");
+    const byTitle = (t: string) => items!.find((i) => i.title === t)!;
+    expect(byTitle("0700").kind).toBe("note");
+    expect(byTitle("Image only clip").status).toBe("error");
+    expect(byTitle("Image only clip").include).toBe(false);
+    const decks = items!.filter((i) => i.kind === "attachment" && i.title === "shared-deck.pdf");
+    expect(decks).toHaveLength(2);
+    expect(decks[1].status).toBe("duplicate");
+    expect(decks[1].include).toBe(false);
+    expect(byTitle("attachment.xlsx").artifact_type).toBe("model");
+  });
+
+  it("flags every item of a re-uploaded export as a duplicate once the first was imported", async () => {
+    const { data: apple } = await admin.from("entity").select("id").eq("cik", "0000320193").single();
+    const first = await upload("sample.enex");
+    await parseAll(first);
+    const { data: firstItems } = await alice.from("import_item").select("id,status").eq("batch_id", first);
+    for (const i of firstItems!) {
+      if (i.status !== "duplicate") await alice.from("import_item").update({ include: true, chosen_entity_ids: [apple!.id] }).eq("id", i.id);
+    }
+    await commitBatchPage(alice, { orgId, userId: await uid(alice), importerName: "Alice Okafor" }, first, 50);
+    const second = await upload("sample.enex");
+    await parseAll(second);
+    const { data: items } = await alice.from("import_item").select("status,include,duplicate_of").eq("batch_id", second);
+    expect(items).toHaveLength(4);
+    expect(items!.every((i) => i.status === "duplicate" && i.include === false && i.duplicate_of !== null)).toBe(true);
+  });
+});
