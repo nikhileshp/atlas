@@ -10,6 +10,9 @@ const AUTHORED_TABLES = [
   "scenario",
   "position_input",
   "decision",
+  // staging, not research — but a batch references its creator, so a user who
+  // started one cannot be hard-deleted
+  "import_batch",
 ] as const;
 
 /** Effectively permanent; Supabase Auth bans are expressed as a duration. */

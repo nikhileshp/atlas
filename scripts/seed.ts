@@ -89,6 +89,9 @@ async function wipe() {
   // FK-safe order. Service-role deletes are seed infrastructure only; the
   // application role cannot delete anything (see 20260803000002_rls.sql).
   for (const table of [
+    // import staging references org + users; clear it first
+    "import_item",
+    "import_batch",
     "decision",
     "position_input",
     "scenario",
