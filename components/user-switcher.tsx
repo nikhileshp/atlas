@@ -21,8 +21,8 @@ export function UserSwitcher({
   const router = useRouter();
 
   return (
-    <label className="flex items-center gap-1.5 border border-dashed border-oxblood/50 bg-oxblood-wash px-2 py-1">
-      <span className="text-[10px] font-data uppercase tracking-widest text-oxblood">
+    <label className="flex items-center gap-1.5 rounded-full border border-dashed border-oxblood/50 bg-oxblood-wash px-3 py-1.5">
+      <span className="text-[11px] font-medium text-oxblood">
         dev · view as
       </span>
       <select
@@ -34,6 +34,7 @@ export function UserSwitcher({
             router.refresh();
           })
         }
+        data-bare
         className="bg-transparent font-data text-xs text-oxblood focus:outline-none"
       >
         {profiles.map((p) => (

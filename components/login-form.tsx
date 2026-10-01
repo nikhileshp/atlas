@@ -11,7 +11,7 @@ export function LoginForm() {
   return (
     <form
       action={action}
-      className="bg-card border border-rule shadow-[3px_3px_0_0_var(--color-rule)] p-6 space-y-4"
+      className="space-y-4"
     >
       <label className="block">
         <span className="section-label">Email</span>
@@ -20,7 +20,7 @@ export function LoginForm() {
           name="email"
           required
           autoComplete="email"
-          className="mt-1 w-full border border-rule bg-paper px-3 py-2 font-data text-sm focus:outline-none focus:border-pine"
+          className="mt-1 w-full border border-rule bg-paper px-3.5 py-2.5 font-data text-sm focus:outline-none focus:border-pine"
         />
       </label>
       <label className="block">
@@ -30,7 +30,7 @@ export function LoginForm() {
           name="password"
           required
           autoComplete="current-password"
-          className="mt-1 w-full border border-rule bg-paper px-3 py-2 font-data text-sm focus:outline-none focus:border-pine"
+          className="mt-1 w-full border border-rule bg-paper px-3.5 py-2.5 font-data text-sm focus:outline-none focus:border-pine"
         />
       </label>
       {state.error && (
@@ -41,7 +41,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="w-full bg-pine text-paper py-2.5 text-sm font-medium tracking-wide uppercase hover:bg-pine-dark transition-colors disabled:opacity-60"
+        className="w-full bg-pine text-paper py-3 text-sm font-medium hover:bg-pine-dark transition-colors disabled:opacity-60"
       >
         {pending ? "Signing in…" : "Sign in"}
       </button>
