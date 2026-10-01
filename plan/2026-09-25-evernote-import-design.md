@@ -133,7 +133,10 @@ path policies apply unchanged.
   entity, its legal names, tickers, and internal names. (Companies added after
   a batch was parsed are not suggested for it; the review picker still offers them.)
 - Rules: a ticker matches as a whole word, case-sensitive uppercase, in title
-  or body (`\bAAPL\b`). A name matches case-insensitively as a whole phrase,
+  or body (`\bAAPL\b`). **Tickers of one or two characters match only in
+  explicit forms** — `$V`, `(V)`, `NYSE: V` / `NASDAQ: V` — because bare `A`,
+  `IT`, `M&A`, `AT&T` are ordinary prose and a match pre-ticks a link (review
+  finding I6, 2026-09-30). A name matches case-insensitively as a whole phrase,
   minimum 3 characters. Title matches rank before body matches; the suggestion
   list is ordered by rank then alias length (longer, more specific first).
 - Attachments inherit their note's suggestions.

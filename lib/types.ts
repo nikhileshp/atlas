@@ -153,3 +153,52 @@ export interface DecisionRow extends BaseRow {
   position_input_id: string;
   quality_score_id: string | null;
 }
+
+// ── import staging (mutable workbench; see migration 20260925000006) ───────
+
+export type ImportBatchStatus = "parsing" | "review" | "importing" | "imported" | "failed" | "discarded";
+export type ImportItemStatus = "pending" | "duplicate" | "unmatched" | "imported" | "skipped" | "error";
+export type ImportItemKind = "note" | "attachment";
+
+export interface ImportBatchRow {
+  id: string;
+  org_id: string;
+  created_by: string;
+  source_kind: "enex";
+  storage_key: string;
+  file_name: string;
+  status: ImportBatchStatus;
+  bytes_total: number | null;
+  bytes_done: number;
+  notes_seen: number;
+  images_skipped: number;
+  error: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ImportItemRow {
+  id: string;
+  batch_id: string;
+  org_id: string;
+  kind: ImportItemKind;
+  parent_item_id: string | null;
+  position: number;
+  title: string;
+  author: string | null;
+  valid_at: string;
+  body: string | null;
+  storage_key: string | null;
+  file_name: string | null;
+  mime: string | null;
+  bytes: number | null;
+  content_hash: string;
+  artifact_type: ArtifactType;
+  suggested_entity_ids: string[];
+  chosen_entity_ids: string[];
+  include: boolean;
+  status: ImportItemStatus;
+  duplicate_of: string | null;
+  artifact_id: string | null;
+  error: string | null;
+}
