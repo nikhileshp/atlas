@@ -243,6 +243,9 @@ recipient yet.
   `npx supabase db reset`, commit, then `npx supabase db push`. Never edit
   the hosted database by hand; it breaks the append-only guarantee's audit
   trail.
+- **Import staging**: batches accumulate in `import_batch`; discarded and
+  imported batches keep their staged attachment objects. Harmless; prune with
+  the service role if storage fills.
 - **App changes**: push to `main`; Vercel deploys automatically. Pull
   requests get preview URLs, but auth redirects only work on the origin
   listed in Supabase, so test auth flows on `main`.

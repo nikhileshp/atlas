@@ -67,6 +67,16 @@ policies.
 4. As `ada.admin`, invite a user; open the mail catcher, click the link,
    set a password — the real Auth email flow, no stubs.
 
+## Importing from Evernote
+
+**Import** (header) takes an Evernote `.enex` export. Notes and their PDF /
+Office attachments are staged with suggested company links (from the aliases
+you maintain); you review, adjust, and press Import. Imported artifacts carry
+the note's created date as `valid_at` and the importer as `created_by`.
+Images are skipped. Uploading the same export twice flags every item as a
+duplicate. The staging tables (`import_batch`, `import_item`) are the one
+deliberately mutable area of the schema — a workbench, not the record.
+
 ## Environment variables
 
 All connection details live in `.env.local` (never committed). The values in
