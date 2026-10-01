@@ -5,10 +5,18 @@ import { canWriteResearch } from "@/lib/roles";
 import { ImportUpload } from "@/components/import-upload";
 import type { ImportBatchRow } from "@/lib/types";
 
+// Server Actions invoked from this page (upload start) inherit this budget.
+export const maxDuration = 60;
+
 export default async function ImportPage() {
-  const { supabase, profile } = await requireUser();
+  const { supabase, user, profile } = await requireUser();
   if (!canWriteResearch(profile.role)) notFound();
-  const { data } = await supabase.from("import_batch").select("*").order("created_at", { ascending: false }).limit(50);
+  const { data } = await supabase
+    .from("import_batch")
+    .select("*")
+    .eq("created_by", user.id)
+    .order("created_at", { ascending: false })
+    .limit(50);
   const batches = (data ?? []) as ImportBatchRow[];
 
   return (

@@ -74,7 +74,10 @@ Office attachments are staged with suggested company links (from the aliases
 you maintain); you review, adjust, and press Import. Imported artifacts carry
 the note's created date as `valid_at` and the importer as `created_by`.
 Images are skipped. Uploading the same export twice flags every item as a
-duplicate. The staging tables (`import_batch`, `import_item`) are the one
+duplicate. An export file can be up to 50 MB (the storage per-file limit);
+export large notebooks in parts. One- and two-letter tickers are suggested
+only when written as `$V`, `(V)` or `NYSE: V`. A parse that stops can be
+retried from where it stopped, and reloading mid-parse is safe. The staging tables (`import_batch`, `import_item`) are the one
 deliberately mutable area of the schema — a workbench, not the record.
 
 ## Environment variables

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { prepareUpload } from "@/actions/artifacts";
 import { startImportBatch } from "@/actions/import";
+import { exportTooLarge, MAX_EXPORT_BYTES } from "@/lib/import/limits";
 
 export function ImportUpload() {
   const router = useRouter();
@@ -13,8 +14,16 @@ export function ImportUpload() {
   const onChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setBusy(true);
     setError(null);
+    if (exportTooLarge(file.size)) {
+      setError(
+        `This export is ${Math.round(file.size / (1024 * 1024))} MB; the limit is ${MAX_EXPORT_BYTES / (1024 * 1024)} MB per file. ` +
+          "Export fewer notes at a time — one notebook, or a selection of notes — and import them as separate batches.",
+      );
+      e.target.value = "";
+      return;
+    }
+    setBusy(true);
     try {
       const prepared = await prepareUpload(file.name);
       if (prepared.error) throw new Error(prepared.error);
@@ -46,7 +55,7 @@ export function ImportUpload() {
         />
       </label>
       <p className="text-xs text-ink-faint mt-2">
-        In Evernote: select a notebook → Export → ENEX. Notes and their PDF / Office attachments are staged for review; images are skipped. Nothing is written to the record until you press Import.
+        In Evernote: select a notebook → Export → ENEX (up to 50 MB per file). Notes and their PDF / Office attachments are staged for review; images are skipped. Nothing is written to the record until you press Import.
       </p>
       {busy && <p className="text-xs font-data mt-2">Uploading…</p>}
       {error && <p className="text-sm text-oxblood bg-oxblood-wash border border-oxblood/30 px-3 py-2 mt-3">{error}</p>}
