@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE en-export SYSTEM "http://xml.evernote.com/pub/evernote-export4.dtd">
+<en-export export-date="20260920T120000Z" application="Evernote" version="10.0">
+<note>
+<title>AAPL mgmt call 2024-03</title>
+<content><![CDATA[<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd"><en-note><div>Met CFO. Pricing power intact; services mix up.</div><div>Model attached: <en-media hash="3e894abe1037dc48d32226c57471c583" type="application/pdf"/></div><div><en-media hash="b357a19c87624c7c4d131aeeb4ae677f" type="image/png"/></div></en-note>]]></content>
+<created>20240312T140500Z</created>
+<updated>20240312T150000Z</updated>
+<note-attributes><author>Alice Okafor</author></note-attributes>
+<resource>
+<data encoding="base64">
+JVBERi0xLjEKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAyIDAgUj4+ZW5kb2JqCjIgMCBv
+Ymo8PC9UeXBlL1BhZ2VzL0tpZHNbXS9Db3VudCAwPj5lbmRvYmoKdHJhaWxlcjw8L1Jvb3QgMSAw
+IFI+Pg==
+</data>
+<mime>application/pdf</mime>
+<resource-attributes><file-name>apple-model-summary.pdf</file-name></resource-attributes>
+</resource>
+<resource>
+<data encoding="base64">
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6
+kgAAAABJRU5ErkJggg==
+</data>
+<mime>image/png</mime>
+<resource-attributes><file-name>chart.png</file-name></resource-attributes>
+</resource>
+</note>
+<note>
+<title>General market thoughts</title>
+<content><![CDATA[<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd"><en-note><div>Rates higher for longer. No single name.</div></en-note>]]></content>
+<created>20240401T090000Z</created>
+</note>
+<note>
+<title>Costco vs Visa: pricing</title>
+<content><![CDATA[<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd"><en-note><div>Costco Wholesale keeps membership fee flat; V takes price in cross-border.</div></en-note>]]></content>
+<created>20240515T160000Z</created>
+</note>
+</en-export>
