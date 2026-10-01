@@ -18,8 +18,18 @@ export function AsOfControl({ asOfIso, pinned }: { asOfIso: string; pinned: bool
   )}T${pad(local.getHours())}:${pad(local.getMinutes())}`;
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="section-label whitespace-nowrap">As of</span>
+    <div
+      className={`flex items-center gap-2 rounded-full border pl-4 pr-1.5 py-1.5 transition-colors ${
+        pinned
+          ? "bg-timewarp border-timewarp text-white shadow-[0_6px_16px_-6px_var(--color-timewarp)]"
+          : "bg-card border-rule"
+      }`}
+    >
+      <span
+        className={`text-xs font-medium whitespace-nowrap ${pinned ? "text-white/80" : "text-ink-faint"}`}
+      >
+        {pinned ? "⧗ As of" : "As of"}
+      </span>
       <input
         type="datetime-local"
         value={inputValue}
@@ -29,15 +39,16 @@ export function AsOfControl({ asOfIso, pinned }: { asOfIso: string; pinned: bool
           if (!v) return;
           startTransition(() => setAsOf(new Date(v).toISOString()));
         }}
-        className={`border px-2 py-1 font-data text-xs bg-card focus:outline-none ${
-          pinned ? "border-timewarp text-timewarp" : "border-rule text-ink-soft"
+        data-bare
+        className={`rounded-full bg-transparent px-2 py-1 font-data text-xs font-medium focus:outline-none ${
+          pinned ? "text-white [color-scheme:dark]" : "text-ink"
         }`}
       />
       {pinned && (
         <button
           onClick={() => startTransition(() => setAsOf(null))}
           disabled={isPending}
-          className="text-xs font-data uppercase tracking-wide text-timewarp underline decoration-dotted hover:text-ink"
+          className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-timewarp hover:bg-timewarp-wash"
         >
           Now
         </button>
@@ -52,7 +63,7 @@ export function TimewarpBanner({ asOfIso }: { asOfIso: string }) {
   const d = new Date(asOfIso);
 
   return (
-    <div className="bg-timewarp-wash border-y border-timewarp/40 text-timewarp px-6 py-1.5 text-xs font-data flex items-center justify-center gap-3">
+    <div className="mx-5 sm:mx-8 mb-2 rounded-2xl bg-timewarp-wash border border-timewarp/30 text-timewarp px-4 py-2.5 text-xs font-data flex flex-wrap items-center justify-between gap-3">
       <span>
         ⧗ Viewing the world as Atlas knew it on{" "}
         <strong>{d.toLocaleString()}</strong> — later records are hidden,
@@ -61,7 +72,7 @@ export function TimewarpBanner({ asOfIso }: { asOfIso: string }) {
       <button
         onClick={() => startTransition(() => setAsOf(null))}
         disabled={isPending}
-        className="underline decoration-dotted uppercase tracking-wide hover:text-ink"
+        className="rounded-full bg-timewarp px-3 py-1 font-semibold text-white hover:bg-ink"
       >
         Return to now
       </button>
