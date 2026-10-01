@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/supabase/server";
 import { getAsOf, isTimeTraveling } from "@/lib/asof-server";
 import { AsOfControl, TimewarpBanner } from "@/components/as-of-control";
 import { UserSwitcher } from "@/components/user-switcher";
+import { NavActive } from "@/components/nav-active";
 import { signOut } from "@/actions/auth";
 import type { Profile } from "@/lib/types";
 
@@ -34,58 +35,78 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="bg-card border-b border-rule-strong">
-        <div className="max-w-7xl mx-auto px-6 pt-4 pb-3">
-          <div className="flex items-baseline justify-between gap-6 flex-wrap">
-            <div className="flex items-baseline gap-4">
-              <Link href="/" className="font-display text-3xl tracking-tight text-pine-dark">
-                Atlas
-              </Link>
-              <span className="section-label hidden sm:inline">
-                {org?.name ?? "—"}
+    <div className="min-h-screen flex flex-col lg:flex-row gap-3 p-3 lg:gap-0 lg:p-4">
+      <aside className="lg:w-60 lg:shrink-0 flex flex-col gap-3 lg:gap-8 lg:px-3 lg:py-5 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)]">
+        <Link href="/" className="flex items-center gap-3 px-1">
+          <span className="grid place-items-center h-9 w-9 rounded-xl bg-pine text-paper">
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 19 12 5l7 14M8.2 13.5h7.6" />
+            </svg>
+          </span>
+          <span className="font-display text-2xl font-medium tracking-tight text-ink">
+            Atlas
+          </span>
+        </Link>
+
+        <nav className="app-nav overflow-x-auto lg:overflow-visible">
+          <Link href="/" className="hover:text-pine-dark">Entities</Link>
+          <Link href="/positions" className="hover:text-pine-dark">Positions</Link>
+          <Link href="/artifacts/new" className="hover:text-pine-dark">Ingest</Link>
+          {profile.role === "admin" && (
+            <>
+              <Link href="/entities/new" className="hover:text-pine-dark">Add company</Link>
+              <Link href="/admin/users" className="hover:text-pine-dark">Users</Link>
+            </>
+          )}
+        </nav>
+        <NavActive />
+
+        <div className="hidden lg:block mt-auto rounded-2xl bg-ink/[0.06] px-4 py-5 text-center">
+          <div className="section-label">Organization</div>
+          <div className="font-display text-lg font-medium leading-snug text-ink mt-1">
+            {org?.name ?? "—"}
+          </div>
+          <p className="mt-2 text-[11px] leading-relaxed text-ink-faint">
+            Append-only · every row remembered · CIK-spined
+          </p>
+          <form action={signOut} className="mt-4">
+            <button className="w-full bg-ink text-paper py-2.5 hover:bg-pine-dark">
+              Sign out
+            </button>
+          </form>
+        </div>
+      </aside>
+
+      <div className="app-main flex-1 min-w-0 flex flex-col bg-surface rounded-[1.75rem] shadow-[0_1px_2px_rgb(23_24_28/0.04)]">
+        <header className="flex items-center justify-between gap-4 flex-wrap px-5 sm:px-8 pt-5 pb-4">
+          <AsOfControl asOfIso={asOf.toISOString()} pinned={pinned} />
+          <div className="flex items-center gap-3 flex-wrap">
+            {process.env.NODE_ENV === "development" && devProfiles.length > 0 && (
+              <UserSwitcher profiles={devProfiles} currentEmail={profile.email} />
+            )}
+            <div className="flex items-center gap-2.5" title={profile.email}>
+              <span className="grid place-items-center h-9 w-9 rounded-full bg-pine-dark text-paper text-sm font-semibold">
+                {profile.display_name.trim().charAt(0).toUpperCase()}
               </span>
-            </div>
-            <div className="flex items-center gap-4 flex-wrap">
-              <AsOfControl asOfIso={asOf.toISOString()} pinned={pinned} />
+              <span className="text-sm font-medium text-ink">{profile.display_name}</span>
               <span
                 className={`px-2 py-0.5 text-[11px] font-data uppercase tracking-wider ${ROLE_STYLE[profile.role]}`}
-                title={profile.email}
               >
-                {profile.display_name} · {profile.role}
+                {profile.role}
               </span>
-              {process.env.NODE_ENV === "development" && devProfiles.length > 0 && (
-                <UserSwitcher profiles={devProfiles} currentEmail={profile.email} />
-              )}
-              <form action={signOut}>
-                <button className="text-xs font-data uppercase tracking-wide text-ink-faint hover:text-oxblood">
-                  Sign out
-                </button>
-              </form>
             </div>
+            <form action={signOut} className="lg:hidden">
+              <button className="text-xs font-medium text-ink-faint hover:text-oxblood">
+                Sign out
+              </button>
+            </form>
           </div>
-          <nav className="mt-3 flex gap-6 text-xs font-data uppercase tracking-[0.14em] text-ink-soft">
-            <Link href="/" className="hover:text-pine-dark">Entities</Link>
-            <Link href="/positions" className="hover:text-pine-dark">Positions</Link>
-            <Link href="/artifacts/new" className="hover:text-pine-dark">Ingest</Link>
-            {profile.role === "admin" && (
-              <>
-                <Link href="/entities/new" className="hover:text-pine-dark">Add company</Link>
-                <Link href="/admin/users" className="hover:text-pine-dark">Users</Link>
-              </>
-            )}
-          </nav>
-        </div>
-        <div className="rule-double" />
-      </header>
+        </header>
 
-      {pinned && <TimewarpBanner asOfIso={asOf.toISOString()} />}
+        {pinned && <TimewarpBanner asOfIso={asOf.toISOString()} />}
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">{children}</main>
-
-      <footer className="border-t border-rule px-6 py-3 text-center text-[11px] font-data text-ink-faint">
-        Append-only · every row remembered · CIK-spined
-      </footer>
+        <main className="flex-1 w-full max-w-6xl px-5 sm:px-8 pt-4 pb-10">{children}</main>
+      </div>
     </div>
   );
 }

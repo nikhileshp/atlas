@@ -1,46 +1,48 @@
 @import "tailwindcss";
 
 @theme {
-  /* the ledger: warm paper, ink, hunter green, oxblood for divergence */
-  --color-paper: #f6f3ec;
-  --color-paper-deep: #efeadf;
-  --color-card: #fdfcf8;
-  --color-ink: #211f1a;
-  --color-ink-soft: #5c574b;
-  --color-ink-faint: #8d8776;
-  --color-rule: #ddd6c5;
-  --color-rule-strong: #b9b09a;
-  --color-pine: #1d4a38;
-  --color-pine-dark: #123125;
-  --color-pine-wash: #e4ece6;
-  --color-oxblood: #7c2d2d;
-  --color-oxblood-wash: #f3e4e1;
-  --color-timewarp: #9a6b00;
-  --color-timewarp-wash: #f5ead0;
+  /*
+   * Soft product-dashboard palette: a grey shell, a white rounded workspace,
+   * near-flat off-white cards, deep green as the primary, coral-red for
+   * divergence and indigo for the time-travel state.
+   *
+   * Token NAMES are unchanged from the earlier "ledger" theme so every page
+   * that says bg-card / border-rule / text-pine-dark / bg-pine / text-oxblood
+   * picks the new look up without edits.
+   */
+  --color-paper: #eeeef1; /* app shell / page background; also text on filled buttons */
+  --color-paper-deep: #f2f2f5; /* recessed strips, asides */
+  --color-surface: #ffffff; /* NEW: the rounded workspace panel, form controls */
+  --color-card: #fafafb;
+  --color-ink: #17181c;
+  --color-ink-soft: #5d6068;
+  --color-ink-faint: #8a8d96;
+  --color-rule: #e7e7ec;
+  --color-rule-strong: #d2d3da;
+  --color-pine: #065549;
+  --color-pine-dark: #0b2924; /* headings, links, button hover: green-black */
+  --color-pine-wash: #e2f1ed;
+  --color-oxblood: #cf332b;
+  --color-oxblood-wash: #fdecea;
+  --color-timewarp: #4656d2;
+  --color-timewarp-wash: #eceefc;
+  --color-coral: #ec7d7c; /* NEW: soft secondary accent */
 
-  --font-display: var(--font-fraunces), "Georgia", serif;
-  --font-body: var(--font-archivo), "Helvetica Neue", sans-serif;
-  --font-data: var(--font-plexmono), "Menlo", monospace;
+  --font-display: var(--font-outfit), "Avenir Next", "Helvetica Neue", sans-serif;
+  --font-body: var(--font-figtree), "Helvetica Neue", sans-serif;
+  /* figures share the body face; .font-data adds tabular numerals */
+  --font-data: var(--font-figtree), "Helvetica Neue", sans-serif;
 }
 
 body {
   background-color: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-body);
-  /* faint laid-paper grain */
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(139, 121, 82, 0.025) 0px,
-    rgba(139, 121, 82, 0.025) 1px,
-    transparent 1px,
-    transparent 3px
-  );
 }
 
-/* ledger double rule, as on a printed register */
+/* a quiet hairline (formerly the ledger double rule) */
 .rule-double {
-  border-bottom: 1px solid var(--color-rule-strong);
-  box-shadow: 0 3px 0 -2px var(--color-rule-strong);
+  border-bottom: 1px solid var(--color-rule);
 }
 
 .font-data {
@@ -52,13 +54,13 @@ body {
   font-family: var(--font-display);
 }
 
-/* small-caps section label, mono tracking */
+/* small grey caption above a field, column or block */
 .section-label {
-  font-family: var(--font-data);
-  font-size: 0.6875rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--color-ink-soft);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--color-ink-faint);
 }
 
 /* staggered entrance for page sections */
@@ -81,3 +83,217 @@ body {
 .rise-3 { animation-delay: 0.15s; }
 .rise-4 { animation-delay: 0.21s; }
 .rise-5 { animation-delay: 0.27s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
+}
+
+/* ── sidebar navigation ───────────────────────────────────────────────────
+ * The nav is a plain list of <Link>s. Icons are keyed off href, and the
+ * active item is selected by a tiny <style> emitted by <NavActive />, which
+ * sets the --nav-* properties on the matching link.
+ */
+.app-nav {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.app-nav a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0 0.875rem 0 3.25rem;
+  border-radius: 0.875rem;
+  font-size: 0.875rem;
+  font-weight: var(--nav-weight, 500);
+  white-space: nowrap;
+  color: var(--nav-ink, var(--color-ink-soft));
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.app-nav a:hover {
+  color: var(--color-ink);
+  background-color: color-mix(in srgb, var(--color-surface) 70%, transparent);
+}
+
+.app-nav a::before,
+.app-nav a::after {
+  content: "";
+  position: absolute;
+  left: 0.25rem;
+  top: 50%;
+  width: 2rem;
+  height: 2rem;
+  transform: translateY(-50%);
+}
+
+.app-nav a::before {
+  border-radius: 0.625rem;
+  background-color: var(--nav-chip, transparent);
+}
+
+.app-nav a::after {
+  background-color: var(--nav-icon, currentColor);
+  -webkit-mask: var(--icon) center / 1.125rem no-repeat;
+  mask: var(--icon) center / 1.125rem no-repeat;
+  /* fallback glyph for links without a dedicated icon */
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8.5'/%3E%3Cpath d='M12 8v8M8 12h8'/%3E%3C/svg%3E");
+}
+
+.app-nav a[href="/"]::after {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Crect x='4' y='4' width='7' height='7' rx='2'/%3E%3Crect x='13' y='4' width='7' height='7' rx='2'/%3E%3Crect x='4' y='13' width='7' height='7' rx='2'/%3E%3Crect x='13' y='13' width='7' height='7' rx='2'/%3E%3C/svg%3E");
+}
+.app-nav a[href="/positions"]::after {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20h16M7 16v-5M12 16V6M17 16v-8'/%3E%3C/svg%3E");
+}
+.app-nav a[href="/artifacts/new"]::after {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 15V4M8 8l4-4 4 4M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4'/%3E%3C/svg%3E");
+}
+.app-nav a[href="/import"]::after {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v11M8 11l4 4 4-4M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4'/%3E%3C/svg%3E");
+}
+.app-nav a[href="/entities/new"]::after {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 20V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14M3 20h14M8.5 8h3M8.5 12h3M19 11v6M16 14h6'/%3E%3C/svg%3E");
+}
+.app-nav a[href="/admin/users"]::after {
+  --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='8' r='3.5'/%3E%3Cpath d='M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.900 2.100 6.500 5.500M16 4.800a3.500 3.500 0 0 1 0 6.400M18.500 14.900c1.600.800 2.700 2.500 3 5.100'/%3E%3C/svg%3E");
+}
+
+@media (min-width: 64rem) {
+  .app-nav {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .app-nav a {
+    min-height: 2.75rem;
+  }
+}
+
+/* ── shape adapter ────────────────────────────────────────────────────────
+ * Pages are written in one square-cornered idiom ("bg-card border
+ * border-rule", "bg-pine text-paper … uppercase", "bg-oxblood-wash
+ * text-oxblood px-1.5"). Rather than rewrite every class list, these
+ * unlayered rules give that idiom the rounded, soft treatment. They sit
+ * outside any @layer, so they take precedence over Tailwind utilities.
+ * Opt a control out with the `data-bare` attribute.
+ */
+
+/* buttons and links are sentence case, never tracked-out caps */
+:where(button, a, summary, legend),
+::file-selector-button {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* bordered containers become soft cards */
+:where(div, form, fieldset, details, ul, ol, section, article, aside, blockquote, table)[class~="border"],
+:where(div, form, fieldset, details, ul, ol, section, article, aside, blockquote, table)[class~="border-2"] {
+  border-radius: 1rem;
+}
+:where(div, form, details, ul, ol, section, article, aside)[class~="border"]:not([class*="overflow-"]),
+:where(div, form, details, ul, ol, section, article, aside)[class~="border-2"]:not([class*="overflow-"]) {
+  overflow: hidden;
+}
+:where(p, label, li)[class~="border"] {
+  border-radius: 0.75rem;
+}
+blockquote[class~="border-l-4"] {
+  border-radius: 0.75rem;
+}
+
+/* form controls */
+:where(input:not([type="checkbox"], [type="radio"], [type="file"], [type="range"], [type="hidden"]), select, textarea):not([data-bare]) {
+  border-radius: 0.625rem;
+  background-color: var(--color-surface);
+  box-shadow: 0 1px 2px rgb(23 24 28 / 0.04);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+:where(input, select, textarea):not([data-bare]):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-pine) 16%, transparent);
+  outline-offset: 0;
+}
+:where(input, textarea)::placeholder {
+  color: var(--color-ink-faint);
+}
+::file-selector-button {
+  border-radius: 0.5rem;
+  font-family: var(--font-body);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* filled buttons */
+:where(button, a)[class~="bg-pine"],
+:where(button, a)[class~="bg-oxblood"],
+:where(button, a)[class~="bg-ink"] {
+  border-radius: 0.625rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  transition: background-color 0.15s, transform 0.15s;
+}
+:where(button, a)[class~="bg-pine"]:active,
+:where(button, a)[class~="bg-oxblood"]:active {
+  transform: translateY(1px);
+}
+:where(button):disabled {
+  cursor: not-allowed;
+}
+
+/* status chips */
+span[class*="-wash"][class*="px-"],
+span[class~="bg-oxblood"][class*="px-"],
+a[class~="bg-pine-wash"] {
+  border-radius: 999px;
+  padding-inline: 0.55rem;
+  font-weight: 600;
+}
+
+/* tables: airy rows, hairline separators, no heavy header rule */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+thead th {
+  border-bottom: 1px solid var(--color-rule);
+  padding-top: 0.875rem;
+  padding-bottom: 0.75rem;
+}
+tbody td {
+  border-bottom: 1px solid var(--color-rule);
+  padding-top: 0.8rem;
+  padding-bottom: 0.8rem;
+}
+tbody tr:last-child > td {
+  border-bottom-width: 0;
+}
+table[class~="border"] thead tr:first-child > th:first-child {
+  border-top-left-radius: 0.9375rem;
+}
+table[class~="border"] thead tr:first-child > th:last-child {
+  border-top-right-radius: 0.9375rem;
+}
+table[class~="border"] tbody tr:last-child > td:first-child {
+  border-bottom-left-radius: 0.9375rem;
+}
+table[class~="border"] tbody tr:last-child > td:last-child {
+  border-bottom-right-radius: 0.9375rem;
+}
+
+/* page headings inside the workspace: medium-weight geometric, not huge */
+.app-main :where(h1, h2, h3)[class~="font-display"] {
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+.app-main h1[class~="font-display"] {
+  font-size: 1.75rem;
+  line-height: 2.125rem;
+}
+.app-main h2[class~="font-display"] {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
